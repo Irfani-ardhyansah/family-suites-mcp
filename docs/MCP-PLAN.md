@@ -950,10 +950,11 @@ Tidak wajib untuk MVP, tapi perlu diputuskan saat review:
    aplikasi, bukan MCP.
 
 Jika salah satu endpoint API diimplementasikan, ikuti
-`../family-tree-api/AGENTS.md`: tambahkan catatan deploy di
+`../family-tree-api/AGENTS.md`: tambahkan catatan deploy API di
 `../family-tree-api/deploy/releases/pending/YYYY-MM-DD-nama-fitur.md` dan update
-`.env.example` / `.env.docker.example` API bila ada env baru. Perubahan di repo
-MCP ini tidak memakai ritual deploy API.
+`.env.example` / `.env.docker.example` API bila ada env baru. Perubahan runtime di
+repo MCP ini punya ritual sendiri: [`deploy/README.md`](./deploy/README.md) dan
+catatan di `deploy/releases/pending/`.
 
 ---
 
@@ -966,8 +967,19 @@ family-tree-mcp/
   package.json
   tsconfig.json
   Dockerfile
-  docker-compose.example.yml
+  docker-compose.yml
+  docker/
+    entrypoint.sh
   .env.example
+  .env.docker.example
+  deploy/
+    README.md
+    releases/
+      _template.md
+      pending/
+      shipped/
+  scripts/
+    deploy.sh
   README.md
   docs/MCP-PLAN.md
   src/
@@ -1018,12 +1030,13 @@ Script aktual:
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "deploy": "bash scripts/deploy.sh"
   }
 }
 ```
 
-Untuk deployment STB, tambahkan service `family-mcp` di `docker-compose.yml`.
+Untuk deployment STB, service `family-mcp` sudah ada di `docker-compose.yml`.
 Service ini:
 
 - join network `shared_net` (atau network BE yang sudah ada)

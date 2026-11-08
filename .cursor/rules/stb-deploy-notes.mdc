@@ -1,0 +1,43 @@
+---
+description: Write a STB deploy note in deploy/releases/pending when a change is ready to ship
+alwaysApply: true
+---
+
+# Catatan deploy STB (family-mcp)
+
+When a change to `family-mcp` is ready for the STB server, add a release note in
+the same change. Ritual: `deploy/README.md`. Template:
+`deploy/releases/_template.md`.
+
+## When to write one
+
+Write `deploy/releases/pending/YYYY-MM-DD-nama-fitur.md` (today's date) when the
+work changes what STB runs: MCP tool behavior, calls to the FamilyRoots API, env,
+Dockerfile, or dependencies.
+
+Skip it for docs-only edits and refactors with no runtime change.
+
+## What to put in it
+
+Copy the template. Keep all four sections. Write **Tidak ada.** when a section
+does not apply.
+
+- **Env** — list new keys and why. Add the same keys to `.env.example` and
+  `.env.docker.example`. Do not put secret values in the note.
+- **Build** — Dockerfile, base image, or dependency changes.
+  `scripts/deploy.sh` always rebuilds the image.
+- **Data awal** — service ini tidak punya database atau seeder. Hampir selalu
+  `Tidak ada.`
+- **Cek setelah naik** — one command per bash fence. The deploy script runs each
+  fence as one command. A `curl` fails on connection error, HTTP 404, or HTTP
+  5xx. Any other command fails on a non-zero exit code. The MCP port is usually
+  not published to the host, so use
+  `docker compose --env-file .env.docker exec -T family-mcp ...`.
+
+Do not put deploy notes in `docs/`.
+
+## Do not mark shipped
+
+Leave the new note in `pending/`. `scripts/deploy.sh` moves every pending note
+to `shipped/` after those checks pass. Do not `git mv` it yourself while
+implementing the change.

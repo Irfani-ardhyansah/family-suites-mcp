@@ -1,0 +1,25 @@
+services:
+  family-mcp:
+    build: .
+    image: family-tree-mcp:latest
+    container_name: family-mcp
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    expose:
+      - "3100"
+    # Kalau Nouride berjalan di host, buka port loopback:
+    # ports:
+    #   - "127.0.0.1:3100:3100"
+    networks:
+      - shared_net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  # Network external yang sama dengan family-tree-api.
+  shared_net:
+    external: true

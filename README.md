@@ -72,6 +72,7 @@ npm test
 
 Untuk Docker, `FAMILY_API_BASE_URL` harus memakai alamat yang bisa dijangkau
 container, mis. `http://family-suite-api:3000/api/v1` — bukan `127.0.0.1`.
+Contoh env server ada di [`.env.docker.example`](./.env.docker.example).
 
 ---
 
@@ -92,12 +93,35 @@ docker buildx build --platform linux/arm64 -t family-tree-mcp:latest .
 Jalankan dengan compose:
 
 ```bash
-cp docker-compose.example.yml docker-compose.yml
-cp .env.example .env
-# edit .env + nama network
-docker compose up -d
-docker compose logs -f family-mcp
+cp .env.docker.example .env.docker
+# edit .env.docker
+docker compose --env-file .env.docker up -d --build
+docker compose --env-file .env.docker logs -f family-mcp
 ```
+
+`docker-compose.yml` sudah disediakan dan memakai network external `shared_net`
+yang sama dengan `family-tree-api`.
+
+---
+
+## Deploy ke STB
+
+Naik versi lewat SSH memakai `scripts/deploy.sh` (`npm run deploy`). Alur
+lengkapnya ada di [`deploy/README.md`](./deploy/README.md).
+
+```bash
+ssh <user>@<host-stb>
+cd /path/ke/family-tree-mcp
+git pull
+bash scripts/deploy.sh
+```
+
+Skrip itu mengecek `.env.docker`, build ulang image, menunggu health, menjalankan
+cek dari catatan `deploy/releases/pending/`, lalu memindahkan catatan yang lolos
+ke `deploy/releases/shipped/`.
+
+Setiap perubahan runtime MCP (tool, panggilan API, env, Dockerfile, dependency)
+ikut membuat catatan baru di `deploy/releases/pending/` pada perubahan yang sama.
 
 ---
 
