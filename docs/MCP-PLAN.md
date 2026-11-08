@@ -1003,6 +1003,7 @@ family-tree-mcp/
     api-client.test.ts
     errors.test.ts
     format.test.ts
+    health.test.ts
 ```
 
 Masih direncanakan (belum ada):

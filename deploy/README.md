@@ -42,12 +42,21 @@ satu perintah rusak, dan hasil ceknya jadi palsu.
 Perintah `curl` dianggap gagal kalau tidak terhubung, HTTP 404, atau HTTP 5xx.
 Perintah lain dianggap gagal kalau exit code-nya bukan 0.
 
-Karena port `family-mcp` biasanya tidak dipublish ke host, cek default dilakukan
-dari dalam container:
+Karena `docker-compose.yml` mem-publish port `3100` ke host, cek bisa memakai
+`curl` dari STB:
 
 ```bash
-docker compose --env-file .env.docker exec -T family-mcp node -e "fetch('http://127.0.0.1:3100/health').then(r=>r.text()).then(t=>{console.log(t);process.exit(t.includes('\"ok\"')?0:1)}).catch(()=>process.exit(1))"
+curl -fsS http://127.0.0.1:3100/health
 ```
+
+`/health` adalah liveness (tidak memanggil API). Kalau deploy ini juga harus
+memastikan API terjangkau, tambahkan:
+
+```bash
+curl -fsS http://127.0.0.1:3100/health/ready
+```
+
+`/health/ready` mengembalikan `503` kalau API tidak terjangkau.
 
 Versi cukup tanggal di nama file. Tidak pakai tag semver.
 

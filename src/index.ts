@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { realpathSync } from 'node:fs';
 import http from 'node:http';
+import { fileURLToPath } from 'node:url';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
@@ -100,19 +102,85 @@ function sessionForRequest(
   return { session, sessionId };
 }
 
+type ApiHealth = {
+  ok: boolean;
+  status?: number;
+  latencyMs: number;
+  error?: string;
+};
+
+async function checkApiHealth(): Promise<ApiHealth> {
+  const startedAt = Date.now();
+  const url = `${env.FAMILY_API_BASE_URL.replace(/\/+$/, '')}/health`;
+  const timeoutMs = Math.min(env.FAMILY_MCP_REQUEST_TIMEOUT_MS, 5_000);
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    return {
+      ok: response.ok,
+      status: response.status,
+      latencyMs: Date.now() - startedAt,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      latencyMs: Date.now() - startedAt,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 export function createApp(): express.Express {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
 
+  app.use((req, res, next) => {
+    const startedAt = Date.now();
+    const requestId = req.header('x-request-id')?.trim() || randomUUID();
+    res.setHeader('x-request-id', requestId);
+    res.on('finish', () => {
+      const isHealth = req.path === '/health' || req.path === '/health/ready';
+      log(isHealth ? 'debug' : 'info', 'HTTP request', {
+        requestId,
+        method: req.method,
+        path: req.path,
+        status: res.statusCode,
+        durationMs: Date.now() - startedAt,
+        sessionId: headerValue(req, 'mcp-session-id'),
+      });
+    });
+    next();
+  });
+
   app.get('/health', (_req, res) => {
+    res.setHeader('cache-control', 'no-store');
     res.json({
       status: 'ok',
       service: SERVER_NAME,
       version: SERVER_VERSION,
+      uptimeSeconds: Math.floor(process.uptime()),
       sessions: sessions.size,
       writeEnabled: env.FAMILY_MCP_ENABLE_WRITE,
       destructiveEnabled: env.FAMILY_MCP_ENABLE_DESTRUCTIVE,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  app.get('/health/ready', async (_req, res) => {
+    const api = await checkApiHealth();
+    res.setHeader('cache-control', 'no-store');
+    res.status(api.ok ? 200 : 503).json({
+      status: api.ok ? 'ok' : 'degraded',
+      service: SERVER_NAME,
+      version: SERVER_VERSION,
+      uptimeSeconds: Math.floor(process.uptime()),
+      sessions: sessions.size,
+      api,
+      timestamp: new Date().toISOString(),
     });
   });
 
@@ -280,8 +348,32 @@ function cleanupIdleSessions(): void {
   }
 }
 
+function isDirectRun(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entry);
+  } catch {
+    return false;
+  }
+}
+
 function main(): void {
   assertRuntimeEnv();
+
+  process.on('uncaughtException', (error) => {
+    log('error', 'uncaughtException', {
+      message: error.message,
+      stack: error.stack,
+    });
+    process.exit(1);
+  });
+  process.on('unhandledRejection', (reason) => {
+    log('error', 'unhandledRejection', {
+      message: reason instanceof Error ? reason.message : String(reason),
+    });
+  });
+
   const app = createApp();
   const httpServer = http.createServer(app);
 
@@ -315,4 +407,6 @@ function main(): void {
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
 }
 
-main();
+if (isDirectRun()) {
+  main();
+}

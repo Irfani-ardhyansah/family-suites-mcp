@@ -70,9 +70,73 @@ npm test
 | `FAMILY_MCP_ENABLE_DESTRUCTIVE` | tidak | `false` | Tool delete (butuh approval) |
 | `FAMILY_MCP_LOG_LEVEL` | tidak | `info` | `debug`/`info`/`warn`/`error` |
 
-Untuk Docker, `FAMILY_API_BASE_URL` harus memakai alamat yang bisa dijangkau
+For Docker, `FAMILY_API_BASE_URL` harus memakai alamat yang bisa dijangkau
 container, mis. `http://family-suite-api:3000/api/v1` — bukan `127.0.0.1`.
 Contoh env server ada di [`.env.docker.example`](./.env.docker.example).
+
+---
+
+## Health check
+
+Dua endpoint tanpa auth:
+
+| Endpoint | Arti |
+|---|---|
+| `GET /health` | Liveness. MCP hidup. Dipakai HEALTHCHECK Docker. Tidak memanggil API. |
+| `GET /health/ready` | Readiness. MCP + API `FAMILY_API_BASE_URL/health`. `503` kalau API tidak terjangkau. |
+
+Dari host STB:
+
+```bash
+curl -fsS http://127.0.0.1:3100/health
+curl -fsS http://127.0.0.1:3100/health/ready
+```
+
+Dari perangkat lain di LAN, `docker-compose.yml` mem-publish port `3100` ke host:
+
+```bash
+curl -fsS http://<ip-server>:3100/health
+```
+
+Pastikan `docker ps` menampilkan `0.0.0.0:3100->3100/tcp`. Kalau hanya
+`3100/tcp`, port belum dipublish dan container perlu dibuat ulang.
+
+Kalau tidak ingin MCP terbuka ke LAN, ganti mapping di `docker-compose.yml`
+menjadi `127.0.0.1:3100:3100`, lalu akses lewat SSH tunnel:
+
+```bash
+ssh -L 3100:127.0.0.1:3100 <user>@<host-stb>
+```
+
+Endpoint `/mcp` tetap wajib Bearer token. `/health` dan `/health/ready` tanpa
+auth, jadi jangan ekspos ke internet tanpa nginx/HTTPS dan pembatasan akses.
+
+Dari dalam container:
+
+```bash
+docker compose exec -T family-mcp wget -qO- http://127.0.0.1:3100/health
+```
+
+Contoh response `/health`:
+
+```json
+{"status":"ok","service":"family-mcp","version":"0.1.0","uptimeSeconds":12,"sessions":0,"writeEnabled":true,"destructiveEnabled":false,"timestamp":"..."}
+```
+
+`/health` sengaja tidak memanggil API supaya healthcheck Docker tetap ringan dan
+tidak ikut gagal saat API restart. Gunakan `/health/ready` untuk cek end-to-end.
+
+## Logging
+
+Semua log ditulis ke stdout/stderr, jadi otomatis ditangkap Docker dan muncul di
+Dozzle. Tidak ada file log di dalam container.
+
+- `docker compose logs -f family-mcp`
+- Dozzle: pilih container `family-mcp`
+- `FAMILY_MCP_LOG_LEVEL=debug` kalau ingin melihat request `/health` tiap
+  healthcheck. Default `info` tidak menampilkan healthcheck agar log tidak banjir.
+- Log request berisi `requestId`, method, path, status, durasi, dan `sessionId`.
+- Header `Authorization` dan token MCP tidak pernah ditulis ke log.
 
 ---
 

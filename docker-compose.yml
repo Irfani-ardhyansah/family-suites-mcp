@@ -8,9 +8,13 @@ services:
       - .env.docker
     expose:
       - "3100"
-    # Kalau Nouride berjalan di host, buka port loopback:
-    # ports:
+    # Publish ke host supaya bisa dicek dari STB / perangkat lain di LAN.
+    # Kalau hanya ingin bisa diakses dari server sendiri, ganti jadi:
     #   - "127.0.0.1:3100:3100"
+    ports:
+      - "3100:3100"
+    init: true
+    stop_grace_period: 15s
     networks:
       - shared_net
     logging:

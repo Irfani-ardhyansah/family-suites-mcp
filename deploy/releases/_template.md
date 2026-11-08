@@ -32,11 +32,12 @@ Tidak ada. Service ini tidak punya database atau seeder.
 ## Cek setelah naik
 
 ```bash
-docker compose --env-file .env.docker exec -T family-mcp node -e "fetch('http://127.0.0.1:3100/health').then(r=>r.text()).then(t=>{console.log(t);process.exit(t.includes('\"ok\"')?0:1)}).catch(()=>process.exit(1))"
+curl -fsS http://127.0.0.1:3100/health
 ```
 
 <!-- scripts/deploy.sh menjalankan setiap perintah di bagian ini.
      Satu fence = satu perintah.
      curl: tidak terhubung / HTTP 404 / HTTP 5xx = gagal.
      Perintah lain: exit code bukan 0 = gagal.
-     Port MCP biasanya tidak dipublish, jadi pakai `docker compose exec`. -->
+     /health = liveness. Tambah /health/ready kalau deploy juga harus
+     memastikan API terjangkau (503 = API down). -->
