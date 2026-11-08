@@ -5,8 +5,8 @@ Service ini memanggil REST API `family-tree-api` memakai token MCP per request
 (`Authorization: Bearer frmcp_...`). Token **tidak disimpan** di service ini.
 
 > Status: scaffold v0.1.0. Sudah bisa dijalankan, di-connect ke Nouride, dan
-> dipakai untuk tool baca + tool tulis Task Board utama. Tool Money Track tulis
-> dan reorder Task Board belum diimplementasikan.
+> dipakai untuk tool baca + tool tulis Task Board serta Money Track (transaksi,
+> transfer, tarik tunai). Tool tulis kantong/akun/kategori belum diimplementasikan.
 
 Rencana lengkap ada di [`docs/MCP-PLAN.md`](./docs/MCP-PLAN.md). Tutorial
 post-deploy API + Nouride ada di
@@ -202,9 +202,11 @@ ikut membuat catatan baru di `deploy/releases/pending/` pada perubahan yang sama
 
 Tidak ada tool create/update/delete Family Roots.
 
-### Money Track (read-only)
+### Money Track
 
-- `money_get_context` — setup, dashboard, akun, pocket, kategori, preferensi
+Baca:
+
+- `money_get_context` — tool pertama yang disarankan
 - `money_get_dashboard`
 - `money_list_accounts`
 - `money_list_pockets`
@@ -216,8 +218,26 @@ Tidak ada tool create/update/delete Family Roots.
 - `money_list_budgets`
 - `money_get_monthly_report`
 - `money_list_wishlist`
+- `money_get_transfer`
+- `money_list_cash_withdrawals`
+- `money_get_cash_withdrawal`
 
-Belum ada tool tulis transaksi/transfer/debt/budget/wishlist.
+Tulis transaksi:
+
+- `money_create_transaction`
+- `money_update_transaction`
+- `money_create_transfer`
+- `money_update_transfer`
+- `money_create_cash_withdrawal`
+- `money_update_cash_withdrawal`
+
+Destruktif (default nonaktif):
+
+- `money_delete_transaction`
+- `money_delete_transfer`
+- `money_delete_cash_withdrawal`
+
+Belum ada tool tulis untuk kantong, akun, kategori, debt, budget, dan wishlist.
 
 ### Task Board
 

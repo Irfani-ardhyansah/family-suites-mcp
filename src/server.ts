@@ -19,7 +19,8 @@ export function createMcpServer(): McpServer {
         'Revisi task hanya boleh dibuat dari task induk berstatus Merged.',
         'MCP hanya mencatat branchName. Jangan membuat, memindah, atau menghapus branch Git.',
         'Tool destruktif butuh flag FAMILY_MCP_ENABLE_DESTRUCTIVE dan konfirmasi eksplisit; minta approval Nouride.',
-        'Money Track otomatis tersedia untuk semua token. Family Core/Household tetap butuh unlock modul di API.',
+        'Money Track otomatis tersedia untuk semua token. Tool tulis transaksi/transfer/tarik tunai aktif bila FAMILY_MCP_ENABLE_WRITE=true; cek saldo pocket sumber sebelum transfer.',
+        'Family Core/Household tetap butuh unlock modul di API.',
       ].join(' '),
     },
   );
