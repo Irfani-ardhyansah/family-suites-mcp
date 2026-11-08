@@ -1,9 +1,25 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+build/
+*.tsbuildinfo
+
+# Test / coverage
 coverage/
+
+# Local env — hanya file contoh yang ikut git
 .env
 .env.*
 !.env.example
 !.env.docker.example
-.DS_Store
+
+# Log & runtime artifacts
+logs/
+uploads/
 *.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
